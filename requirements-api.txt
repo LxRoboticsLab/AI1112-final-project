@@ -1,0 +1,3 @@
+# HTTP API（navigation_with_doors_api.py）
+flask>=3.0.0
+# 可选替代：fastapi>=0.100.0 uvicorn>=0.23.0
