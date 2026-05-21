@@ -42,12 +42,10 @@
 ## 克隆仓库
 
 ```bash
-git clone <你的仓库 URL> lesson-project
+git clone https://github.com/LxRoboticsLab/AI1112-final-project.git
 cd lesson-project
 chmod +x setup.sh
 ```
-
-将 `<你的仓库 URL>` 换为实际 GitHub 地址。
 
 ---
 
