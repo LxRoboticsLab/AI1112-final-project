@@ -1,0 +1,191 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -640,
+        -336
+      ],
+      "id": "b2d6a840-fc12-4cea-b4c1-212894414984",
+      "name": "When chat message received",
+      "webhookId": "5f7ec319-ebe2-42a4-bd9a-59249551028d"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4o",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -528,
+        16
+      ],
+      "id": "1bb3eaf9-4c8d-4fd3-bedc-275651de99e6",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "1BUBd6CBLJsyIPld",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -336,
+        -256
+      ],
+      "id": "5262f540-60f6-4c6b-99ff-9857197c1600",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "description": "控制机器人导航到目标点，需要输入x,y坐标",
+        "jsCode": "// ==========================================\n// 1. 全地形参数提取器：去各个可能的角落找数据\n// ==========================================\nlet params = {};\n\nif (typeof query === 'string') {\n  // 场景 A：你在 n8n 界面手动点击 Test，Query 框里的内容是一个字符串\n  try {\n    params = JSON.parse(query); \n  } catch (e) {\n    return \"测试参数格式错误：请确保 Query 框里填入的是合法的 JSON。\";\n  }\n} else if (typeof query === 'object' && query !== null) {\n  // 场景 B：某些 n8n 版本中，Agent 真实运行会把对象放在 query 里\n  params = query;\n} else if (typeof $json !== 'undefined' && $json !== null) {\n  // 场景 C：标准的 n8n 节点数据流\n  params = $json;\n} else if (typeof $input !== 'undefined' && $input.item && $input.item.json) {\n  // 场景 D：深层嵌套对象\n  params = $input.item.json;\n}\n\n// ==========================================\n// 2. 提取、类型转换与容错处理\n// ==========================================\nconst x = parseFloat(params.x);\nconst y = parseFloat(params.y);\nconst floor = typeof params.floor !== 'undefined' && params.floor !== null ? parseInt(params.floor) : 0;\nconst goal_yaw_deg = typeof params.goal_yaw_deg !== 'undefined' && params.goal_yaw_deg !== null ? parseFloat(params.goal_yaw_deg) : null;\n\n// 防御性校验\nif (isNaN(x) || isNaN(y)) {\n  // 故意抛出 params 的内容，方便调试看 n8n 到底传了什么\n  return `[参数校验失败] 必须提供数字 x 和 y 坐标。系统实际提取到的参数字典为: ${JSON.stringify(params)}。`;\n}\n\n// 组装最终请求体\nconst requestBody = { x: x, y: y, floor: floor };\nif (goal_yaw_deg !== null && !isNaN(goal_yaw_deg)) {\n  requestBody.goal_yaw_deg = goal_yaw_deg;\n}\n\n// ==========================================\n// 3. 执行真正的物理导航调度请求\n// ==========================================\ntry {\n  const response = await this.helpers.httpRequest({\n    method: 'POST',\n    url: 'http://127.0.0.1:5001/api/robot/navigate',\n    body: requestBody,\n    json: true \n  });\n  \n  return JSON.stringify(response);\n\n} catch (error) {\n  const serverError = error.response ? JSON.stringify(error.response.data) : error.message;\n  return `目标服务器拒绝了请求 (400)。\\n发送的数据: ${JSON.stringify(requestBody)}\\n服务器返回的错误: ${serverError}`;\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.3,
+      "position": [
+        128,
+        32
+      ],
+      "id": "33dc82bb-7a67-476b-9e18-d47cdb8203bd",
+      "name": "Navigate"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        -304,
+        32
+      ],
+      "id": "2d8e648f-b588-4192-83e7-146b13415416",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "description": "查询当前场景的物品列表，不需要大模型填参数",
+        "jsCode": "// ==========================================\n// 查询类 API 不需要参数提取器，直接发起请求\n// ==========================================\ntry {\n  const response = await this.helpers.httpRequest({\n    method: 'GET',\n    url: 'http://127.0.0.1:5001/api/objects',\n    json: true // 自动解析返回的 JSON 数据\n  });\n  \n  return JSON.stringify(response);\n\n} catch (error) {\n  // 优雅捕获并返回报错信息给大模型\n  const serverError = error.response ? JSON.stringify(error.response.data) : error.message;\n  return `查询失败。\\n服务器返回的错误: ${serverError}`;\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.3,
+      "position": [
+        -160,
+        32
+      ],
+      "id": "4c901dec-2287-4e65-a9ef-5028f58b1dfe",
+      "name": "objects"
+    },
+    {
+      "parameters": {
+        "description": "抓取并放置，需要传入抓取目标物体和目标位置的全名",
+        "jsCode": "// ==========================================\n// 1. 全地形参数提取器：去各个可能的角落找数据\n// ==========================================\nlet params = {};\n\nif (typeof query === 'string') {\n  try {\n    params = JSON.parse(query); \n  } catch (e) {\n    return \"测试参数格式错误：请确保 Query 框里填入的是合法的 JSON。\";\n  }\n} else if (typeof query === 'object' && query !== null) {\n  params = query;\n} else if (typeof $json !== 'undefined' && $json !== null) {\n  params = $json;\n} else if (typeof $input !== 'undefined' && $input.item && $input.item.json) {\n  params = $input.item.json;\n}\n\n// ==========================================\n// 2. 提取、类型转换与容错处理\n// ==========================================\nconst object_name = params.object_name;\nconst target_name = params.target_name;\n\n// 防御性校验：确保大模型确实提取到了这两个必填名字\nif (!object_name || !target_name) {\n  return `[参数校验失败] 必须提供 object_name 和 target_name。系统实际提取到的参数字典为: ${JSON.stringify(params)}。`;\n}\n\n// 组装最终请求体\nconst requestBody = { \n  object_name: object_name, \n  target_name: target_name \n};\n\n// ==========================================\n// 3. 发送 Pick&Place 请求\n// ==========================================\ntry {\n  const response = await this.helpers.httpRequest({\n    method: 'POST',\n    url: 'http://127.0.0.1:5001/api/robot/pick_place',\n    body: requestBody,\n    json: true \n  });\n  \n  return JSON.stringify(response);\n\n} catch (error) {\n  const serverError = error.response ? JSON.stringify(error.response.data) : error.message;\n  return `Pick&Place 请求被拒绝。\\n发送的数据: ${JSON.stringify(requestBody)}\\n服务器返回的错误: ${serverError}`;\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.3,
+      "position": [
+        -16,
+        32
+      ],
+      "id": "f3504909-78f3-45ac-8a28-b9b1c99aac3c",
+      "name": "pick&place"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Navigate": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        []
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "objects": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "pick&place": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a43cae88-a931-4a42-be6b-70717b1640d5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "35f503515ca470fa78ee82489271a55281fe53b5cf7dce7b46cbb7cef126cce2"
+  },
+  "id": "oWNaRxxetlIaF3tJ",
+  "tags": []
+}
