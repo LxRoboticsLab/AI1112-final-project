@@ -113,8 +113,10 @@ python -u navigation_with_doors_api.py
 ```bash
 npx n8n
 ```
-打开http://localhost:5678进入可视化页面。
+打开 http://localhost:5678 进入可视化页面。
+
 导入My workflow.json。
+
 即可开始与agent交流。
 
 ---
