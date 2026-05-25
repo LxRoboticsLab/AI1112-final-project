@@ -108,6 +108,15 @@ python -u navigation_with_doors_api.py
 
 所有 HTTP 接口前缀为 `**/api**`，默认监听 `**0.0.0.0**`（局域网可访问）。
 
+启动n8n可视化页面，新开终端。
+
+```bash
+npx n8n
+```
+打开http://localhost:5678进入可视化页面。
+导入My workflow.json。
+即可开始与agent交流。
+
 ---
 
 ## 端口
@@ -129,7 +138,6 @@ python -u navigation_with_doors_api.py
 | 类别         | 能力                                 |
 | ---------- | ---------------------------------- |
 | 健康 / 状态    | 服务是否运行、门列表、机器人位姿、抓取状态              |
-| 门          | 只读查询门 ID/状态/距离（启动时已全部打开，无开关门 API）   |
 | 导航         | 提交目标点 A* 导航；轮询完成状态                 |
 | 相机         | 获取头部或腕部 JPEG（Base64）               |
 | 物体         | 列出可抓取物体与可放置目标                      |
@@ -163,31 +171,6 @@ python -u navigation_with_doors_api.py
 {
   "status": "running",
   "doors": ["door_name_1", "door_name_2"]
-}
-```
-
----
-
-#### `GET /api/doors`
-
-列出所有门及状态（只读）。仿真启动时会自动打开所有可控门；**不支持**运行时开关门。
-
-**响应示例：**
-
-```json
-{
-  "doors": [
-    {
-      "id": 1,
-      "name": "door_xxx_0",
-      "state": "open",
-      "controllable": false,
-      "note": "All doors are opened at startup; POST /api/door/control is disabled.",
-      "world_x": 1.77,
-      "world_y": -4.38,
-      "distance_m": 2.15
-    }
-  ]
 }
 ```
 
