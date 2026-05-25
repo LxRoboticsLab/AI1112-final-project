@@ -1,4 +1,4 @@
-# OmniGibson 导航 + 门控 HTTP API
+# OmniGibson 导航 HTTP API
 
 基于 [BEHAVIOR-1K](https://github.com/StanfordVL/BEHAVIOR-1K) / OmniGibson 的室内导航仿真后端：场景 **Beechwood_0_int**，机器人 **Stretch**，支持 A* 导航、门开关、抓取放置、多步任务计划与 HTTP 远程控制。
 
@@ -113,6 +113,7 @@ python -u navigation_with_doors_api.py
 ```bash
 npx n8n
 ```
+
 打开 http://localhost:5678 进入可视化页面。
 
 导入My workflow.json。
@@ -186,21 +187,6 @@ npx n8n
 {
   "success": true,
   "position": [1.2, -3.4, 0.05]
-}
-```
-
----
-
-#### `GET /api/robot/grasp_status`
-
-**响应示例：**
-
-```json
-{
-  "success": true,
-  "holding": false,
-  "object_name": null,
-  "grasp_attempt_index": 0
 }
 ```
 
